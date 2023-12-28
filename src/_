@@ -1,0 +1,9 @@
+struct aaa {
+   int z;
+   int y;
+   int (*x)();
+};
+
+struct aaa bbb;
+
+void foo(void) { foo(); }
