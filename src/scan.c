@@ -15,7 +15,7 @@ int next(void) {
 		Putback = 0;
 		return c;
 	}
-	if (Mp) {
+	while (Mp > Mpbase) {
 		if ('\0' == *Macp[Mp-1]) {
 			Macp[Mp-1] = NULL;
 			return Macc[--Mp];
@@ -23,9 +23,20 @@ int next(void) {
 		else {
 			return *Macp[Mp-1]++;
 		}
+		fprintf(stderr, "JML loo %d\n", Mp);
 	}
 	c = fgetc(Infile);
-	if ('\n' == c) Line++;
+	if ('\n' == c) {
+		Line++;
+		if (O_preponly) {
+			Newline++;
+			Spaces = 0;
+		}
+	} else if (' ' == c) {
+		Spaces++;
+	} else if ('\t' == c) {
+		Spaces = (Spaces & ~0x7) + 8;
+	}
 	return c;
 }
 
@@ -86,7 +97,7 @@ static int scanch(void) {
 	}
 }
 
-static int scanint(int c) {
+static int scanint(int c, int *r) {
 	int	val, radix, k, i = 0;
 
 	val = 0;
@@ -109,9 +120,59 @@ static int scanint(int c) {
 		val = val * radix + k;
 		c = next();
 	}
-	putback(c);
+	*r = INTLIT;
+	if (c == 'u' || c == 'U') {
+		*r = UNSIGLIT;
+		c = next();
+	}
+	if (c != 'l' && c != 'L') {
+		putback(c);
+	}
 	Text[i] = 0;
 	return val;
+}
+
+int scandigit(int c)
+{
+	int val = 0;
+
+	while ('0' <= c && '9' >= c) {
+		val *= 10;
+		val += c - '0';
+		c = next();
+	}
+	putback(c);
+	return val;	
+}
+
+/* after dot scan floating point constant */
+static void scanfp(void) {
+	int c, r;
+	c = next();
+	if (isdigit(c)) {
+		scandigit(c);
+	}
+	c = next();
+	if ('e' == c) {
+		c = next();
+		if ('-' == c) {
+			c = next();
+		} else if ('+' == c) {
+			c = next();
+		}
+		if (isdigit(c)) {
+			scandigit(c);
+			c = next();
+		}
+	}
+	if ('f' == c || 'F' == c) {
+		/* float */
+	} else if ('L' == c) {
+		/* long double */
+	} else {
+		/* double */
+		putback(c);
+	}
 }
 
 static int scanstr(char *buf) {
@@ -149,10 +210,11 @@ static int scanident(int c, char *buf, int lim) {
 }
 
 int skip(void) {
-	int	c, p, nl;
+	int	c, p, nl, skipnl;
 
 	c = next();
 	nl = 0;
+	skipnl = 0;
 	for (;;) {
 		if (EOF == c) {
 			strcpy(Text, "<EOF>");
@@ -161,8 +223,27 @@ int skip(void) {
 		while (' ' == c || '\t' == c || '\n' == c ||
 			'\r' == c || '\f' == c
 		) {
-			if ('\n' == c) nl = 1;
+			if ('\n' == c) {
+				if (skipnl) {
+					skipnl = 0;
+				} else {
+					if (!Expandmac) {
+						return ' ';
+					}
+				}
+				nl = 1;
+			}
 			c = next();
+		}
+		if ('\\' == c) {
+			c = next();
+			if (c == '\n' || c == '\r') {
+				skipnl = 1;
+				continue;
+			} else {
+				putback(c);
+				c = '\\';
+			}
 		}
 		if (nl && c == '#') {
 			preproc();
@@ -179,6 +260,7 @@ int skip(void) {
 			break;
 		}
 		if (c == '/') {
+			/*error("line comment not valid in C90", NULL);*/
 			while ((c = next()) != EOF) {
 				if (c == '\n') break;
 			}
@@ -198,30 +280,34 @@ int skip(void) {
 }
 
 static int keyword(char *s) {
+	char *p;
 	switch (*s) {
 	case '#':
-		switch (s[1]) {
+		p = s + 1;
+		switch (p[0]) {
 		case 'd':
-			if (!strcmp(s, "#define")) return P_DEFINE;
+			if (!strcmp(p, "define")) return P_DEFINE;
 			break;
 		case 'e':
-			if (!strcmp(s, "#else")) return P_ELSE;
-			if (!strcmp(s, "#endif")) return P_ENDIF;
-			if (!strcmp(s, "#error")) return P_ERROR;
+			if (!strcmp(p, "else")) return P_ELSE;
+			if (!strcmp(p, "elif")) return P_ELIF;
+			if (!strcmp(p, "endif")) return P_ENDIF;
+			if (!strcmp(p, "error")) return P_ERROR;
 			break;
 		case 'i':
-			if (!strcmp(s, "#ifdef")) return P_IFDEF;
-			if (!strcmp(s, "#ifndef")) return P_IFNDEF;
-			if (!strcmp(s, "#include")) return P_INCLUDE;
+			if (!strcmp(p, "ifdef")) return P_IFDEF;
+			if (!strcmp(p, "if")) return P_IF;
+			if (!strcmp(p, "ifndef")) return P_IFNDEF;
+			if (!strcmp(p, "include")) return P_INCLUDE;
 			break;
 		case 'l':
-			if (!strcmp(s, "#line")) return P_LINE;
+			if (!strcmp(p, "line")) return P_LINE;
 			break;
 		case 'p':
-			if (!strcmp(s, "#pragma")) return P_PRAGMA;
+			if (!strcmp(p, "pragma")) return P_PRAGMA;
 			break;
 		case 'u':
-			if (!strcmp(s, "#undef")) return P_UNDEF;
+			if (!strcmp(p, "undef")) return P_UNDEF;
 			break;
 		}
 		break;
@@ -234,11 +320,13 @@ static int keyword(char *s) {
 	case 'c':
 		if (!strcmp(s, "case")) return CASE;
 		if (!strcmp(s, "char")) return CHAR;
+		if (!strcmp(s, "const")) return CONST;
 		if (!strcmp(s, "continue")) return CONTINUE;
 		break;
 	case 'd':
 		if (!strcmp(s, "default")) return DEFAULT;
 		if (!strcmp(s, "do")) return DO;
+		/*if (!strcmp(s, "double")) return DOUBLE;*/
 		break;
 	case 'e':
 		if (!strcmp(s, "else")) return ELSE;
@@ -246,17 +334,26 @@ static int keyword(char *s) {
 		if (!strcmp(s, "extern")) return EXTERN;
 		break;
 	case 'f':
+		/*if (!strcmp(s, "float")) return FLOAT;*/
 		if (!strcmp(s, "for")) return FOR;
+		break;
+	case 'g':
+		if (!strcmp(s, "goto")) return GOTO;
 		break;
 	case 'i':
 		if (!strcmp(s, "if")) return IF;
 		if (!strcmp(s, "int")) return INT;
+		break;
+	case 'l':
+		/*if (!strcmp(s, "long")) return LONG;*/
 		break;
 	case 'r':
 		if (!strcmp(s, "register")) return REGISTER;
 		if (!strcmp(s, "return")) return RETURN;
 		break;
 	case 's':
+		/*if (!strcmp(s, "short")) return SHORT;*/
+		/*if (!strcmp(s, "signed")) return SIGNED;*/
 		if (!strcmp(s, "sizeof")) return SIZEOF;
 		if (!strcmp(s, "static")) return STATIC;
 		if (!strcmp(s, "struct")) return STRUCT;
@@ -267,6 +364,7 @@ static int keyword(char *s) {
 		break;
 	case 'u':
 		if (!strcmp(s, "union")) return UNION;
+		/*if (!strcmp(s, "unsigned")) return UNSIGNED;*/
 		break;
 	case 'v':
 		if (!strcmp(s, "void")) return VOID;
@@ -281,16 +379,28 @@ static int keyword(char *s) {
 
 static int macro(char *name) {
 	int	y;
+	int i;
 
 	y = findmac(name);
-	if (!y || Types[y] != TMACRO)
+	if (!y || Mtext[y] == NULL)
 		return 0;
-	playmac(Mtext[y]);
+	for (i = 1; i <= Isp; i++) {
+		if (frozen(i)) return 0;
+	}
+	
+	if (Mp > 0 && y == Macy[Mp-1])
+		return 0;
+
+	if (!strcmp(name, "__FILE__")) {
+	}
+	if (!strcmp(name, "__LINE__")) {
+	}
+	playmac(y);
 	return 1;
 }
 
 static int scanpp(void) {
-	int	c, t;
+	int	c, t, r;
 
 	if (Rejected != -1) {
 		t = Rejected;
@@ -493,10 +603,15 @@ static int scanpp(void) {
 			return STRLIT;
 		case '#':
 			Text[0] = '#';
-			scanident(next(), &Text[1], TEXTLEN-1);
+			r = next();
+			while (isspace(r)) {
+				r = next();
+			}
+			scanident(r, &Text[1], TEXTLEN-1);
 			if ((t = keyword(Text)) != 0)
 				return t;
-			error("unknown preprocessor command: %s", Text);
+			if (!frozen(1)) {
+				error("unknown preprocessor command: %s", Text);			}
 			return IDENT;
 		case '.':
 			if ((c = next()) == '.') {
@@ -508,12 +623,24 @@ static int scanpp(void) {
 				error("incomplete '...'", NULL);
 				return ELLIPSIS;
 			}
-			putback(c);
+			if (isdigit(c)) {
+				putback(c);
+				scanfp();
+			} else {
+				putback(c);
+			}
 			return DOT;
+		case ' ':
+			return XEOL;
 		default:
 			if (isdigit(c)) {
-				Value = scanint(c);
-				return INTLIT;
+				Value = scanint(c, &r);
+				if ((c = next()) == '.') {
+					scanfp();
+				} else {
+					putback(c);
+				}
+				return r;
 			}
 			else if (isalpha(c) || '_' == c) {
 				Value = scanident(c, Text, TEXTLEN);
@@ -533,7 +660,6 @@ static int scanpp(void) {
 
 int scan(void) {
 	int	t;
-
 	do {
 		t = scanpp();
 		if (!Inclev && Isp && XEOF == t)

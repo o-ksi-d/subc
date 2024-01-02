@@ -113,7 +113,7 @@ static void compile(char *file, char *def) {
 #endif /* !__dos */
 
 static void collect(char *file, int temp) {
-	if (O_componly || O_asmonly) return;
+	if (O_componly || O_asmonly || O_preponly) return;
 	if (Nf >= MAXFILES)
 		cmderror("too many input files", NULL);
 	Temp[Nf] = temp;
@@ -182,7 +182,7 @@ static void link(void) {
 }
 
 static void usage(void) {
-	printf("Usage: scc [-h] [-ctvNSV] [-d opt] [-o file] [-D macro[=text]]"
+	printf("Usage: scc [-h] [-ctvNSVE] [-I dir] [-d opt] [-o file] [-D macro[=text]]"
 		" file [...]\n");
 }
 
@@ -195,9 +195,11 @@ static void longusage(void) {
 		"-o file  write linker output to FILE\n"
 		"-t       test only, generate no code\n"
 		"-v       verbose, more v's = more verbose\n"
+		"-I       additional include directory\n"
 		"-D m=v   define macro M with optional value V\n"
 		"-N       do not use stdio (can't use printf, etc)\n"
 		"-S       compile to assembly language\n"
+		"-E       preprocess only\n"
 		"-V       print version and exit\n"
 		"\n" );
 }
@@ -218,6 +220,28 @@ static char *nextarg(int argc, char *argv[], int *pi, int *pj) {
 	return s;
 }
 
+static void preprocess(char *file, char *def) {
+	char	*ofile;
+	FILE	*in, *out;
+
+	in = stdin;
+	out = stdout;
+	if (file) {
+		ofile = newfilename(file, 'i');
+		if ((in = fopen(file, "r")) == NULL)
+			cmderror("no such file: %s", file);
+		if ((out = fopen(ofile, "w")) == NULL)
+			cmderror("cannot create file: %s", ofile);
+	}
+	printf("preprocessing %s\n", file);
+	program(file, in, out, def);
+	if (file) {
+		fclose(in);
+		if (out) fclose(out);
+	}
+}
+
+
 static int dbgopt(int argc, char *argv[], int *pi, int *pj) {
 	char	*s;
 
@@ -236,13 +260,24 @@ static int dbgopt(int argc, char *argv[], int *pi, int *pj) {
 
 int main(int argc, char *argv[]) {
 	int	i, j;
-	char	*def;
 
-	def = NULL;
+	     char    def[TEXTLEN+2];
+        char    *d;
+        char    *in;
+        char    *a;
+
+        def[0] = '\0';
+        def[1] = '\0';
+        d = def;
+        Includes[0] = '\0';
+        Includes[1] = '\0';
+        in = Includes;
+
 	O_debug = 0;
 	O_verbose = 0;
 	O_componly = 0;
 	O_asmonly = 0;
+	O_preponly = 0;
 	O_testonly = 0;
 	O_stdio = 1;
 	O_outfile = NULL;
@@ -273,9 +308,36 @@ int main(int argc, char *argv[]) {
 			case 'v':
 				O_verbose++;
 				break;
-			case 'D':
-				if (def) cmderror("too many -D's", NULL);
-				def = nextarg(argc, argv, &i, &j);
+                       case 'D':
+                                if (argv[i][j+1]) {
+                                        a = &argv[i][j+1];
+                                        j = strlen(argv[i])-1;
+                                } else {
+                                        a = nextarg(argc, argv, &i, &j);
+                                }
+                                if (d - def + strlen(a) >= TEXTLEN) {
+                                        cmderror("too many -D's", NULL);
+                                }
+                                strcat(d, a);
+                                d += strlen(a) + 1;
+                                *(d) = '\0';
+                                break;
+                       case 'I':
+                                if (argv[i][j+1]) {
+                                        a = &argv[i][j+1];
+                                        j = strlen(argv[i])-1;
+                                } else {
+                                        a = nextarg(argc, argv, &i, &j);
+                                }
+                                if (in - Includes  + strlen(a) >= TEXTLEN) {
+                                        cmderror("too many -I's", NULL);
+                                }
+                                strcat(in, a);
+                                in += strlen(a) + 1;
+                                *(in) = '\0';
+                                break;
+			case 'E':
+				O_preponly = 1;
 				break;
 			case 'N':
 				O_stdio = 0;
@@ -299,10 +361,14 @@ int main(int argc, char *argv[]) {
 	Nf = 0;
 	while (i < argc) {
 		if (filetype(argv[i]) == 'c') {
-			compile(argv[i], def);
+			if (O_preponly) {
+				preprocess(argv[i], def);
+			} else {
+				compile(argv[i], def);
+			}
 			if (Errors && !O_testonly)
 				cmderror("compilation stopped", NULL);
-			if (!O_asmonly && !O_testonly)
+			if (!O_asmonly && !O_testonly && !O_preponly)
 				assemble(argv[i], 1);
 			i++;
 		}
@@ -315,6 +381,6 @@ int main(int argc, char *argv[]) {
 			collect(argv[i++], 0);
 		}
 	}
-	if (!O_componly && !O_testonly) link();
+	if (!O_componly && !O_testonly && !O_preponly) link();
 	return EXIT_SUCCESS;
 }

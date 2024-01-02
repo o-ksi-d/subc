@@ -54,6 +54,7 @@ OpenBSD/i386)		os=openbsd ; mac=386     ; int=32 ;;
 Linux/i386)		os=linux   ; mac=386     ; int=32 ;;
 Linux/i686)		os=linux   ; mac=386     ; int=32 ;;
 Linux/x86_64)		os=linux   ; mac=x86-64  ; int=64 ;;
+Linux/armv7l)		os=linux   ; mac=armv6   ; int=32 ;;
 MINGW32_NT-6.1/i686)	os=windows ; mac=386     ; int=32 ;;
 MINGW32_NT-5.1/i686)	os=windows ; mac=386     ; int=32 ;;
 Darwin/x86_64)		os=darwin  ; mac=x86-64  ; int=64 ; stat=untested

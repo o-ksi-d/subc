@@ -121,7 +121,7 @@ void	notvoid(int p);
 int	objsize(int prim, int type, int size);
 node	*optimize(node *n);
 void	opt_init(void);
-void	playmac(char *s);
+void	playmac(int y);
 int	pointerto(int prim);
 void	preproc(void);
 int	primtype(int t, char *s);
