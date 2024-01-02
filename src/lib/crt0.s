@@ -1,1 +1,1 @@
-../targets/freebsd-x86-64/crt0-freebsd-x86-64.s
+../targets/linux-armv6/crt0-linux-armv6.s

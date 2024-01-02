@@ -13,7 +13,6 @@
 # https://github.com/aligrudi/neatlibc/blob/master/arm/syscall.s
 # https://gist.github.com/yamnikov-oleg/454f48c3c45b735631f2
 # https://syscalls.w3challs.com/?arch=arm_strong
-
 	.data
 	.align	2
 	.globl	Cenviron
@@ -24,10 +23,10 @@ Cenviron:
 	.align	2
 	.globl	_start
 _start:
-	bl	C_init		@INIT
-	add	r2,sp,#4	@ argv
-	ldr	r1,[sp]		@ argc
-	mov	r0,r1		@ environ = &argv[argc+1]
+	bl	C_init		// @INIT
+	add	r2,sp,#4	//@ argv
+	ldr	r1,[sp]		//@ argc
+	mov	r0,r1		//@ environ = &argv[argc+1]
 	add	r0,r0,#1
 	lsl	r0,r0,#2
 	add	r0,r0,r2

@@ -10,7 +10,7 @@
 
 void cgdata(void)	{ gen(".data"); }
 void cgtext(void)	{ gen(".text"); }
-void cgprelude(void)	{ gen(".syntax unified"); }
+void cgprelude(void)	{ gen(""); }
 void cgpostlude(void)	{ }
 void cgpublic(char *s)	{ ngen(".globl\t%s", s, 0); }
 
@@ -186,7 +186,7 @@ void cgand(void)	{ cgload2(); gen("and\tr0,r0,r1"); }
 void cgior(void)	{ cgload2(); gen("orr\tr0,r0,r1"); }
 void cgxor(void)	{ cgload2(); gen("eor\tr0,r0,r1"); }
 void cgadd(void)	{ gen("add\tr0,r0,r1"); }
-void cgmul(void)	{ gen("mul\tr0,r0,r1"); }
+void cgmul(void)	{ gen("mul\tr0,r1,r0"); }
 void cgsub(void)	{ gen("sub\tr0,r0,r1"); }
 void cgdiv(void)	{ gen("bl\tsdiv"); }
 void cgmod(void)	{ gen("bl\tsrem"); }
@@ -248,7 +248,7 @@ void cgscale(void)	{ gen("lsl\tr0,#2"); }
 void cgscale2(void)	{ gen("lsl\tr1,#2"); }
 void cgunscale(void)	{ gen("lsr\tr0,#2"); }
 void cgscaleby(int v)	{ cglit2(v, 1);
-			  gen("mul\tr0,r0,r1"); }
+			  gen("mul\tr0,r1,r0"); }
 void cgscale2by(int v)	{ cglit2(v, 2);
 			  gen("mul\tr1,r1,r2"); }
 void cgunscaleby(int v)	{ cglit2(v, 1);

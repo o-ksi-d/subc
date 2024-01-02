@@ -1,0 +1,13 @@
+
+This doesn't work on debian 12 aarch64 :
+sudo dpkg --add-architecture armel
+sudo apt update
+sudo apt-get install  libc6:armel  libstdc++6:armel
+sudo apt install binfmt-support
+
+
+https://ftp.gnu.org/gnu/binutils/binutils-2.14a.tar.bz2
+./configure --host=arm --target=arm-linux
+make
+sudo make install
+

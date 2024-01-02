@@ -260,8 +260,7 @@ static int dbgopt(int argc, char *argv[], int *pi, int *pj) {
 
 int main(int argc, char *argv[]) {
 	int	i, j;
-
-	     char    def[TEXTLEN+2];
+	char    def[TEXTLEN+2];
         char    *d;
         char    *in;
         char    *a;

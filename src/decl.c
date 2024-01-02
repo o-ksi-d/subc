@@ -748,19 +748,30 @@ static void stats(void) {
 
 void defarg(char *s) {
 	char	*p;
-
+	int	c;
 	if (NULL == s) return;
-	if ((p = strchr(s, '=')) != NULL)
+	c = 0;
+	if ((p = strchr(s, '=')) != NULL) {
+		c = *p;
 		*p++ = 0;
+	}
 	else
 		p = "";
 	addglob(s, 0, TMACRO, 0, 0, 0, globname(p), 0);
-	if (*p) *--p = '=';
+	if (c) {
+		p--;
+		*p = c;
+	}
 }
 
 void program(char *name, FILE *in, FILE *out, char *def) {
+	char *p;
 	init();
-	defarg(def);
+	p = def;
+	while (*p) {
+		defarg(p);
+		p += strlen(p) + 1;
+	}
 	Infile = in;
 	Outfile = out;
 	File = Basefile = name;

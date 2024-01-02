@@ -1,1 +1,1 @@
-targets/cg/cgx86-64.h
+targets/cg/cgarmv6.h

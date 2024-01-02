@@ -15,7 +15,7 @@ int findglob(char *s) {
 		if (	Types[i] != TMACRO && Stcls[i] != CMEMBER &&
 			*s == *Names[i] && !strcmp(s, Names[i])
 		)
-			return i;
+		return i;
 	}
 	return 0;
 }
@@ -45,8 +45,9 @@ int findmac(char *s) {
 	for (i=0; i<Globs; i++)
 		if (	TMACRO == Types[i] &&
 			*s == *Names[i] && !strcmp(s, Names[i])
-		)
+		) {
 			return i;
+		}
 	return 0;
 }
 

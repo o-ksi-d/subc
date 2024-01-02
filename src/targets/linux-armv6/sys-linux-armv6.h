@@ -4,6 +4,11 @@
  */
 
 #define OS		"Linux"
-#define ASCMD		"as -o %s %s"
+#ifndef LDCMD
 #define LDCMD		"ld -o %s %s/lib/%scrt0.o"
+#endif
+#ifndef ASCMD
+#define ASCMD		"as -o %s %s"
+#endif
+
 #define SYSLIBC		""
