@@ -4,12 +4,12 @@ SCCDIR=	$(PREFIX)/scc
 BINDIR=	$(PREFIX)/bin
 SC86DIR=$(PREFIX)/scc86
 
-AS=	arm-linux-gnueabi-as	
-AR=	arm-linux-gnueabi-ar -rc
-RANLIB=	arm-linux-gnueabi-ranlib
+AS=	arm-linux-as	
+AR=	arm-linux-ar -rc
+RANLIB=	arm-linux-ranlib
 
-DEFINES= -DASCMD="\"arm-linux-gnueabi-as -march=armv6 -o %s %s\"" \
-	-DLDCMD="\"arm-linux-gnueabi-ld -o %s %s/lib/%scrt0.o\"" \
+DEFINES= -DASCMD="\"arm-linux-as -march=armv5 -o %s %s\"" \
+	-DLDCMD="\"arm-linux-ld -o %s %s/lib/%scrt0.o\"" \
 
 
 LINT=	gcc -O3 -c -o /dev/null -ansi -pedantic -Wall

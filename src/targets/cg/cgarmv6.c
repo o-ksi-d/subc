@@ -190,8 +190,8 @@ void cgmul(void)	{ gen("mul\tr0,r1,r0"); }
 void cgsub(void)	{ gen("sub\tr0,r0,r1"); }
 void cgdiv(void)	{ gen("bl\tsdiv"); }
 void cgmod(void)	{ gen("bl\tsrem"); }
-void cgshl(void)	{ gen("lsl\tr0,r0,r1"); }
-void cgshr(void)	{ gen("asr\tr0,r0,r1"); }
+void cgshl(void)	{ gen("mov\tr0,r0,lsl r1"); }
+void cgshr(void)	{ gen("mov\tr0,r0,asr r1"); }
 
 void cgcmp(char *inst)	{ gen("mov\tr3,r0");
 			  gen("mov\tr0,#0");
@@ -239,14 +239,14 @@ void cgbrugt(int n)	{ cgbrcond("bhi", n); }
 void cgbrule(int n)	{ cgbrcond("bls", n); }
 void cgbruge(int n)	{ cgbrcond("bhs", n); }
 
-void cgneg(void)	{ gen("neg\tr0,r0"); }
+void cgneg(void)	{ gen("rsb\tr0,r0,#0"); }
 void cgnot(void)	{ gen("mvn\tr0,r0"); }
 void cglognot(void)	{ gen("cmp\tr0,#0");
 			  gen("mov\tr0,#0");
 			  gen("moveq\tr0,#1"); }
-void cgscale(void)	{ gen("lsl\tr0,#2"); }
-void cgscale2(void)	{ gen("lsl\tr1,#2"); }
-void cgunscale(void)	{ gen("lsr\tr0,#2"); }
+void cgscale(void)	{ gen("mov\tr0,r0,lsl #2"); }
+void cgscale2(void)	{ gen("mov\tr1,r1,lsl #2"); }
+void cgunscale(void)	{ gen("mov\tr0,r0,lsr #2"); }
 void cgscaleby(int v)	{ cglit2(v, 1);
 			  gen("mul\tr0,r1,r0"); }
 void cgscale2by(int v)	{ cglit2(v, 2);
