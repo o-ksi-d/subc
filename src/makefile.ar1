@@ -43,7 +43,7 @@ LIBOBJS=lib/init.o lib/abort.o lib/abs.o lib/atexit.o lib/atoi.o \
 all:	scc0 crt0 ncrt0 lib
 
 scc:	scc1 $(SRC)
-	qemu-arm ./scc1 -o scc $(SRC)
+	qemu-arm ./scc1 $(DEFINES) -o scc $(SRC)
 
 scc1:	scc0 lib/crt0.o lib/libscc.a $(SRC)
 	./scc0 $(DEFINES) -o scc1 $(SRC)
@@ -93,7 +93,7 @@ tests:	test ptest systest libtest sigtest
 	@echo "Looks good!"
 
 test:	scc $(SRC)
-	sh ../tests/triple-test.sh
+	sh ../tests/triple-arm.sh
 
 ptest:	scc0 lib/crt0.o lib/libscc.a ../tests/ptest.src ../tests/ptest.awk
 	awk -f ../tests/ptest.awk <../tests/ptest.src >../tests/ptest.c

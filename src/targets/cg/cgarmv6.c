@@ -175,9 +175,9 @@ void cgindb(void)	{ gen("ldrb\tr0,[r0]"); }
 void cgindw(void)	{ gen("ldr\tr0,[r0]"); }
 void cgldlab(int id)	{ cgstataddr(id, 0); }
 
-void cgpush(void)	{ gen("push\t{r0}"); }
+void cgpush(void)	{ gen("stmfd\tsp!,{r0}"); }
 void cgpushlit(int n)	{ cglit(n); cgpush(); }
-void cgpop2(void)	{ gen("pop\t{r1}"); }
+void cgpop2(void)	{ gen("ldmfd\tsp!,{r1}"); }
 void cgswap(void)	{ gen("mov\tr2,r0");
 			  gen("mov\tr0,r1");
 			  gen("mov\tr1,r2"); }
@@ -390,7 +390,7 @@ void cgldswtch(int n)	{ cgstataddr(n, 1); }
 void cgcalswtch(void)	{ gen("b\tswitch"); }
 void cgcase(int v, int l)	{ lgen2(".long\t%d,%c%d", v, l); }
 
-void cgpopptr(void)	{ gen("pop\t{r2}"); }
+void cgpopptr(void)	{ gen("ldmfd\tsp!,{r2}"); }
 void cgstorib(void)	{ gen("strb\tr0,[r2]"); }
 void cgstoriw(void)	{ gen("str\tr0,[r2]"); }
 void cgstorlb(int n)	{ cglocladdr(n, 1);
@@ -413,9 +413,9 @@ void cgcall(char *s)	{ sgen("%s\t%s", "bl", s); }
 void cgcalr(void)	{ gen("blx\tr0"); }
 void cgstack(int n)	{ cglit2(n, 1);
 			  gen("add\tsp,sp,r1"); }
-void cgentry(void)	{ gen("push\t{r11,lr}");
+void cgentry(void)	{ gen("stmfd\tsp!,{r11,lr}");
 			  gen("mov\tr11,sp"); }
-void cgexit(void)	{ gen("pop\t{r11,pc}"); }
+void cgexit(void)	{ gen("ldmfd\tsp!,{r11,pc}"); }
 
 void cgdefb(int v)	{ ngen("%s\t%d", ".byte", v); }
 void cgdefw(int v)	{ ngen("%s\t%d", ".long", v); }
